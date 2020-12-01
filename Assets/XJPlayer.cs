@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using RootMotion.Dynamics;
 using UnityEngine;
 
 public enum PlayState
@@ -16,6 +17,17 @@ public class XJPlayer : MonoBehaviour
     public float speed = 3;
     public float rotationSpeed = 180;
     public PlayState playState = PlayState.None;
+    protected Vector3 destDir;
+
+    public string[] attackAnims;
+    protected int currentAtkIndex = 0;
+    protected int nextAtkIndex = 0;
+
+    public PuppetMaster puppetMaster;
+    public Rigidbody head;
+    public Vector3 force;
+    public float forceMagnitude = 100;
+    public bool applyForce = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -26,15 +38,15 @@ public class XJPlayer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var dir = new Vector3();
-        dir.x = Input.GetAxisRaw("Horizontal");
-        dir.z = Input.GetAxisRaw("Vertical");
+        destDir = new Vector3();
+        destDir.x = Input.GetAxisRaw("Horizontal");
+        destDir.z = Input.GetAxisRaw("Vertical");
 
-        transform.position = transform.position + dir * speed * Time.deltaTime;
-        if(dir.x != 0 || dir.z != 0)
+        transform.position = transform.position + destDir * speed * Time.deltaTime;
+        if(destDir.x != 0 || destDir.z != 0)
         {
             var prevRotation = transform.localEulerAngles;
-            transform.forward = dir;
+            transform.forward = destDir;
             var targetRotation = transform.localEulerAngles;
 
             var rotationDelta = targetRotation.y - prevRotation.y;
@@ -47,7 +59,13 @@ public class XJPlayer : MonoBehaviour
             }
             else
             {
-                newRotation.y += Mathf.Sign(rotationDelta) * rotationIncrement;
+                var rotateSign = Mathf.Sign(rotationDelta);
+                if(Mathf.Abs(rotationDelta) > 180f)
+                {
+                    rotateSign *= -1;
+                }
+
+                newRotation.y += rotateSign * rotationIncrement;
             }
 
             transform.localEulerAngles = newRotation;
@@ -57,6 +75,15 @@ public class XJPlayer : MonoBehaviour
         else
         {
             SetState(PlayState.Idle);
+        }
+
+        if(Input.GetMouseButtonDown(0))
+        {
+            currentAtkIndex = nextAtkIndex;
+            nextAtkIndex = (nextAtkIndex + 1) % attackAnims.Length;
+
+            animator.SetLayerWeight(1, 1);
+            animator.CrossFadeInFixedTime(attackAnims[currentAtkIndex], 0.1f, 1);
         }
     }
 
@@ -82,12 +109,41 @@ public class XJPlayer : MonoBehaviour
         switch(state)
         {
             case PlayState.Idle:
-                animator.CrossFadeInFixedTime("Idle", 0.1f);
+                animator.CrossFadeInFixedTime("Idle", 0.1f, 0);
+                force = transform.forward * forceMagnitude;
+                applyForce = true;
                 break;
 
             case PlayState.Run:
-                animator.CrossFadeInFixedTime("Run", 0.1f);
+                animator.CrossFadeInFixedTime("Run", 0.1f, 0);
+                force = -destDir.normalized * forceMagnitude;
+                applyForce = true;
                 break;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if(!applyForce)
+        {
+            return;
+        }
+
+        head.AddForce(force, ForceMode.Impulse);
+        applyForce = false;
+    }
+
+    [ContextMenu("EditorAddForce")]
+    protected void EditorAddForce()
+    {
+        applyForce = true;
+    }
+
+    void OnAtkEnd(int index)
+    {
+        if(index == currentAtkIndex)
+        {
+            animator.SetLayerWeight(1, 0);
         }
     }
 }
