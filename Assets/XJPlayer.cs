@@ -28,6 +28,7 @@ public class XJPlayer : MonoBehaviour
     public Vector3 force;
     public float forceMagnitude = 100;
     public bool applyForce = false;
+    public float animSpeed = 1f;
     // Start is called before the first frame update
     void Start()
     {
@@ -38,6 +39,7 @@ public class XJPlayer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        animator.speed = animSpeed;
         destDir = new Vector3();
         destDir.x = Input.GetAxisRaw("Horizontal");
         destDir.z = Input.GetAxisRaw("Vertical");
