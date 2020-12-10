@@ -23,11 +23,10 @@ public class XJPlayer : MonoBehaviour
     protected int currentAtkIndex = 0;
     protected int nextAtkIndex = 0;
 
-    public PuppetMaster puppetMaster;
     public Rigidbody head;
     public Vector3 force;
     public float forceMagnitude = 100;
-    public bool applyForce = false;
+    public bool isForceApplied = false;
     public float animSpeed = 1f;
     // Start is called before the first frame update
     void Start()
@@ -43,6 +42,10 @@ public class XJPlayer : MonoBehaviour
         destDir = new Vector3();
         destDir.x = Input.GetAxisRaw("Horizontal");
         destDir.z = Input.GetAxisRaw("Vertical");
+
+        destDir = Camera.main.transform.TransformDirection(destDir);
+        destDir.y = 0;
+        destDir.Normalize();
 
         transform.position = transform.position + destDir * speed * Time.deltaTime;
         if(destDir.x != 0 || destDir.z != 0)
@@ -113,32 +116,32 @@ public class XJPlayer : MonoBehaviour
             case PlayState.Idle:
                 animator.CrossFadeInFixedTime("Idle", 0.1f, 0);
                 force = transform.forward * forceMagnitude;
-                applyForce = true;
+                isForceApplied = true;
                 break;
 
             case PlayState.Run:
                 animator.CrossFadeInFixedTime("Run", 0.1f, 0);
                 force = -destDir.normalized * forceMagnitude;
-                applyForce = true;
+                isForceApplied = true;
                 break;
         }
     }
 
     private void FixedUpdate()
     {
-        if(!applyForce)
+        if(!isForceApplied)
         {
             return;
         }
 
         head.AddForce(force, ForceMode.Impulse);
-        applyForce = false;
+        isForceApplied = false;
     }
 
     [ContextMenu("EditorAddForce")]
     protected void EditorAddForce()
     {
-        applyForce = true;
+        isForceApplied = true;
     }
 
     void OnAtkEnd(int index)

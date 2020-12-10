@@ -4,3 +4,5 @@ obj/*
 Temp/*
 *.csproj
 *.sln
+Assets/Tower_Defence_Pack_1/*
+Assets/Tower_Defence_Pack_1.meta
